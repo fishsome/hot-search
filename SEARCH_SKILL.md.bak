@@ -1,0 +1,182 @@
+# 🔍 搜索技能 v1.0
+
+**聚合搜索引擎（反爬绕过版）**
+
+---
+
+## 📋 快速开始
+
+### 安装依赖
+
+```bash
+pip install requests beautifulsoup4
+```
+
+### 基本使用
+
+```python
+from search_skill import SearchEngine
+
+# 初始化
+search = SearchEngine()
+
+# 单引擎搜索
+results = search.bing_cn("2026 国际油价趋势")
+for item in results:
+    print(f"标题：{item['title']}")
+    print(f"链接：{item['link']}")
+    print(f"摘要：{item['snippet'][:100]}...")
+    print()
+
+# 多引擎聚合搜索
+all_results = search.search_all("人工智能最新技术")
+
+# 去重合并
+unique_results = search.deduplicate(all_results)
+print(f"共获得 {len(unique_results)} 条唯一结果")
+```
+
+### 命令行使用
+
+```bash
+# 单关键词搜索
+python search_skill.py "关键词"
+
+# 指定引擎
+python search_skill.py "关键词" bing_cn
+
+# 聚合搜索（全部引擎）
+python search_skill.py "关键词" all
+```
+
+---
+
+## 🛡️ 反爬技巧
+
+本技能内置 4 大反爬绕过技巧，经实测验证（5 站点×5 关键词，成功率 80%）：
+
+### 1. UA 伪装池
+随机更换 User-Agent，模拟不同浏览器/设备：
+- Chrome 120 (Windows)
+- Safari 17.2 (macOS)
+- Firefox 121 (Windows)
+- Chrome 120 (Linux)
+- Safari Mobile (iPhone)
+
+### 2. 随机抖动延迟
+请求间隔 1~2 秒随机延迟，模拟人类访问行为，避免固定频率被识别。
+
+### 3. 完整请求头模拟
+补充 Referer、Accept-Language、Accept-Encoding 等完整浏览器头。
+
+### 4. 自动重试机制
+配置 Retry 策略，遇到 403/429/5xx 自动重试 3 次，backoff_factor=1。
+
+---
+
+## 📊 支持的搜索引擎
+
+| 引擎 | 成功率 | 平均响应 | 推荐场景 |
+|------|--------|----------|----------|
+| 必应国内 | 100% | 389ms | 中文内容、日常搜索 |
+| 必应国际 | 100% | 1293ms | 英文内容、国际资讯 |
+| Yandex | 100% | 1484ms | 小语种、俄语资源 |
+| Swisscows | 100% | 3162ms | 隐私保护、无广告 |
+
+**已移除：** Mojeek（国内 IP 段完全封禁，0% 成功率）
+
+---
+
+## 🔧 高级配置
+
+### 自定义延迟范围
+
+```python
+# 低频率请求（<10 次/分钟）
+search = SearchEngine(delay_range=(1.0, 2.0))
+
+# 中频率请求（10~30 次/分钟）
+search = SearchEngine(delay_range=(2.0, 5.0))
+
+# 高频率请求（>30 次/分钟，建议搭配代理）
+search = SearchEngine(delay_range=(3.0, 10.0))
+```
+
+### 自定义超时时间
+
+```python
+# 快速超时（网络好时）
+search = SearchEngine(timeout=5)
+
+# 慢速超时（网络差时）
+search = SearchEngine(timeout=20)
+```
+
+### 指定引擎列表
+
+```python
+# 只用必应国内 + 国际
+results = search.search_all("关键词", engines=["bing_cn", "bing_global"])
+
+# 只用备用引擎
+results = search.search_all("关键词", engines=["yandex", "swisscows"])
+```
+
+---
+
+## 📝 测试结果
+
+**测试时间：** 2026-03-21 11:44  
+**测试规模：** 5 站点 × 5 关键词 = 25 次请求
+
+### 整体表现
+- 总请求数：25 次
+- 成功数：20 次
+- 成功率：80.0%
+- 平均响应时间：1572ms
+
+### 各引擎表现
+- 必应国内：5/5 成功，平均 389ms ⭐
+- 必应国际：5/5 成功，平均 1293ms
+- Yandex：5/5 成功，平均 1484ms
+- Swisscows：5/5 成功，平均 3162ms
+- Mojeek：0/5 成功，全部 403 ❌
+
+---
+
+## 🚨 常见问题
+
+### Q: 为什么有时返回 403？
+A: 可能是请求频率过高或 UA 被识别。建议：
+1. 增加延迟范围（delay_range）
+2. 更换 UA 池
+3. 使用代理 IP
+
+### Q: 如何提高搜索速度？
+A: 优先使用必应国内（平均 389ms），或减少引擎数量：
+```python
+results = search.search_all("关键词", engines=["bing_cn"])
+```
+
+### Q: 如何保存搜索结果？
+A: 使用 JSON 保存：
+```python
+import json
+
+results = search.search_all("关键词")
+with open("results.json", "w", encoding="utf-8") as f:
+    json.dump(results, f, ensure_ascii=False, indent=2)
+```
+
+---
+
+## 📚 参考资料
+
+- 学习文档：《公开搜索引擎访问方案汇总（纯网址访问版）》
+- 测试报告：https://feishu.cn/docx/SDyqdMyNdooaGixXeO4cBglDnDc
+
+---
+
+**作者：** 小美  
+**版本：** v1.0  
+**最后更新：** 2026-03-21
