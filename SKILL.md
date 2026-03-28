@@ -263,6 +263,78 @@ downloaded = search.search_and_download('原油图表', limit=3)
 
 ---
 
+## 🤖 Agent 调用规范（❗ 必须遵守）
+
+### ⚠️ 异步阻塞调用
+
+**所有搜索操作必须使用异步阻塞方式调用！**
+
+```python
+# ✅ 正确：异步阻塞调用
+import asyncio
+from search_skill import SearchEngine
+
+async def search_task():
+    search = SearchEngine()
+    results = await asyncio.to_thread(search.search_all, '关键词')
+    return results
+
+# 在 Agent 中调用
+results = await search_task()
+```
+
+**原因：**
+- 搜索操作涉及网络请求，可能阻塞主线程
+- 异步调用避免卡死 Agent 主进程
+- 支持并发执行多个搜索任务
+
+### 🎯 子 Agent 触发条件
+
+**当预测需要搜索的不同网站内容超过 50 条时，必须询问用户是否开启子 Agent！**
+
+```python
+# 判断逻辑
+def should_spawn_subagent(search_queries):
+    """
+    判断是否需要子 Agent
+    
+    条件：
+    1. 需要搜索的不同网站/数据源 >= 3 个
+    2. 预计总结果数 >= 50 条
+    3. 任务复杂度较高（如：跨多个数据源采集）
+    """
+    if len(search_queries) >= 3 and estimated_results >= 50:
+        return True
+    return False
+
+# 询问用户
+if should_spawn_subagent(queries):
+    print("⚠️ 检测到需要搜索多个数据源，预计返回 50+ 条结果")
+    print("是否开启子 Agent 进行异步并行搜索？（推荐）")
+    print("  - 优势：多任务并行，互不阻塞，失败隔离")
+    print("  - 耗时：预计 5-10 秒（单线程需 30+ 秒）")
+```
+
+### 📋 子 Agent 使用场景
+
+| 场景 | 建议 |
+|------|------|
+| 单数据源搜索（<10 条结果） | ❌ 不需要子 Agent |
+| 单数据源批量搜索（>50 条结果） | ⚠️ 建议子 Agent |
+| 多数据源聚合搜索（3+ 数据源） | ✅ 强烈推荐子 Agent |
+| 全量数据采集（全市场股票/基金） | ✅ 必须子 Agent |
+| 策略回测 + 数据采集 | ✅ 必须子 Agent |
+
+### 📊 子 Agent 优势
+
+- ✅ **并行执行** - 多个数据源同时搜索，速度提升 3-5 倍
+- ✅ **失败隔离** - 单任务失败不影响其他任务
+- ✅ **进度可见** - 实时上报进度，每 10 分钟主动汇报
+- ✅ **超时控制** - 独立超时设置，不阻塞主 Agent
+- ✅ **自动重试** - 失败任务自动重试 3 次
+
+---
+
 ## 🔗 相关资源
 
 - [OpenClaw 文档](https://docs.openclaw.ai)
