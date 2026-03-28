@@ -265,50 +265,42 @@ downloaded = search.search_and_download('原油图表', limit=3)
 
 ## 🤖 Agent 调用规范（❗ 必须遵守）
 
-### ⚠️ 异步阻塞调用
+### ⚠️ exec 执行必须用异步阻塞
 
-**所有搜索操作必须使用异步阻塞方式调用！**
+**所有 Python 脚本执行必须使用异步阻塞方式（yieldMs/background）！**
 
-```python
-# ✅ 正确：异步阻塞调用
-import asyncio
-from search_skill import SearchEngine
+```bash
+# ✅ 正确：异步阻塞执行（推荐）
+# 设置 yieldMs=5000，5 秒后后台继续执行，不阻塞主进程
+exec command="python3 search_skill.py '关键词' all" yieldMs=5000
 
-async def search_task():
-    search = SearchEngine()
-    results = await asyncio.to_thread(search.search_all, '关键词')
-    return results
+# ✅ 正确：长时间任务用 background
+# 立即后台执行，用 process 工具轮询结果
+exec command="python3 search_skill.py '全量股票数据' akshare" background=true
 
-# 在 Agent 中调用
-results = await search_task()
+# ❌ 错误：同步阻塞执行（会卡死！）
+# 不要这样！网络请求可能阻塞 10+ 秒
+exec command="python3 search_skill.py '关键词' all"
 ```
 
 **原因：**
-- 搜索操作涉及网络请求，可能阻塞主线程
-- 异步调用避免卡死 Agent 主进程
-- 支持并发执行多个搜索任务
+- 搜索操作涉及多个网络请求，单引擎 2 秒超时，多引擎可能 10+ 秒
+- 同步阻塞会卡死 Agent 主进程，无法响应其他请求
+- 异步阻塞让出执行权，后台继续运行，完成后通知
 
 ### 🎯 子 Agent 触发条件
 
 **当预测需要搜索的不同网站内容超过 50 条时，必须询问用户是否开启子 Agent！**
 
+**判断逻辑：**
 ```python
-# 判断逻辑
-def should_spawn_subagent(search_queries):
-    """
-    判断是否需要子 Agent
-    
-    条件：
-    1. 需要搜索的不同网站/数据源 >= 3 个
-    2. 预计总结果数 >= 50 条
-    3. 任务复杂度较高（如：跨多个数据源采集）
-    """
-    if len(search_queries) >= 3 and estimated_results >= 50:
-        return True
-    return False
+# 条件：
+# 1. 需要搜索的不同网站/数据源 >= 3 个
+# 2. 预计总结果数 >= 50 条
+# 3. 任务复杂度较高（如：跨多个数据源采集）
 
-# 询问用户
-if should_spawn_subagent(queries):
+if len(search_queries) >= 3 and estimated_results >= 50:
+    # 询问用户
     print("⚠️ 检测到需要搜索多个数据源，预计返回 50+ 条结果")
     print("是否开启子 Agent 进行异步并行搜索？（推荐）")
     print("  - 优势：多任务并行，互不阻塞，失败隔离")
