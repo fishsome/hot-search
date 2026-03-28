@@ -498,17 +498,11 @@ if __name__ == "__main__":
 NEWS_SOURCES = {
     "zaobao": {
         "name": "联合早报（新加坡）",
-        "url": "https://www.zaobao.com/news/world",
+        "url": "https://www.zaobao.com",  # 首页，自动跳转
         "lang": "zh",
         "need_translate": False,
         "link_pattern": "/story",
-    },
-    "zaobao_china": {
-        "name": "联合早报（中国新闻）",
-        "url": "https://www.zaobao.com/news/china",
-        "lang": "zh",
-        "need_translate": False,
-        "link_pattern": "/story",
+        "note": "国内访问自动跳转中国版，权重降低",
     },
     "rt": {
         "name": "RT（俄罗斯）",
