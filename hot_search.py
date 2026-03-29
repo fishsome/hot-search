@@ -1,408 +1,231 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Hot Search v1.0.2 - 全网热搜神器
-作者：FishSome | 邮箱：fishsomes@gmail.com
+Hot Search v2.0.0 - 全网热搜神器
+统一入口：搜索 + 热搜榜 + URL 深度抓取
 
-功能：多引擎搜索 + 金融数据 + 新闻抓取（纯Python，不用浏览器）
+作者：FishSome | 邮箱：fishsomes@gmail.com
 """
 
-import requests
-from bs4 import BeautifulSoup
-import random
-import time
-import re
-import urllib.parse
+import sys
+import os
 from typing import List, Dict, Optional
 
-# ==================== 配置 ====================
+# 添加模块路径
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-USER_AGENTS = {
-    "chrome": [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-    ],
-    "firefox": [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
-    ],
-    "safari": [
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-    ],
-}
+# 导入搜索模块（从原 hot_search.py）
+from search_skill import SearchEngine as _SearchEngine
 
-# 浏览器指纹
-BROWSER_FINGERPRINTS = {
-    "chrome": {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "accept_language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "accept_encoding": "gzip, deflate, br",
-        "sec_ch_ua": '"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"',
-        "sec_ch_ua_mobile": "?0",
-        "sec_ch_ua_platform": '"Windows"',
-        "sec_fetch_dest": "document",
-        "sec_fetch_mode": "navigate",
-        "sec_fetch_site": "none",
-        "sec_fetch_user": "?1",
-        "upgrade_insecure_requests": "1",
-    },
-    "firefox": {
-        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "accept_language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
-        "accept_encoding": "gzip, deflate, br",
-        "te": "trailers",
-    },
-}
+# 导入热搜引擎
+from engines import get_baidu_hot, get_weibo_hot, get_zhihu_hot
 
-TIMEOUT = 10  # 单次请求超时（秒）
+# 导入 URL 抓取
+from fetcher import scrape_url as _scrape_url
 
-# 搜索引擎配置
-ENGINES = {
-    "bing_global": {"url": "https://global.bing.com/search", "params": {"q": "{kw}"}},
-    "bing_cn": {"url": "https://cn.bing.com/search", "params": {"q": "{kw}"}},
-    "yandex": {"url": "https://yandex.com/search", "params": {"text": "{kw}"}},
-    "swisscows": {"url": "https://swisscows.com/web", "params": {"q": "{kw}"}},
-}
 
-# 新闻源配置（纯静态抓取，不用浏览器）
-NEWS_SOURCES = {
-    "zaobao": {
-        "name": "联合早报",
-        "url": "https://www.zaobao.com/news/world",
-        "pattern": "/story",  # 链接匹配模式
-        "lang": "zh",
-    },
-    "rt": {
-        "name": "RT俄罗斯",
-        "url": "https://www.rt.com/",
-        "pattern": "/news/",
-        "lang": "en",
-    },
-    "un_news": {
-        "name": "联合国新闻",
-        "url": "https://news.un.org/zh",
-        "pattern": "/story/",
-        "lang": "zh",
-    },
-}
+# ==================== 公开 API ====================
 
-# 金融数据关键词映射
-FINANCE_MAP = {
-    "wti": ("commodity/crude-oil", "WTI原油"),
-    "原油": ("commodity/crude-oil", "WTI原油"),
-    "brent": ("commodity/brent-crude-oil", "布伦特原油"),
-    "gold": ("commodity/gold", "黄金"),
-    "黄金": ("commodity/gold", "黄金"),
-    "bitcoin": ("crypto", "比特币"),
-    "比特币": ("crypto", "比特币"),
-}
-
-# 中文翻译映射
-ZH_EN = {
-    "战争": "war", "原油": "crude oil", "油价": "oil price", "股市": "stock market",
-    "经济": "economy", "科技": "technology", "政治": "politics", "中国": "China",
-    "美国": "USA", "俄罗斯": "Russia", "伊朗": "Iran", "以色列": "Israel",
-}
-
-# ==================== 核心类 ====================
-
-class HotSearch:
-    """热搜神器：搜索 + 金融 + 新闻 + 跳转访问"""
+def search(keyword: str, engine: str = "all") -> List[Dict]:
+    """
+    全网搜索
     
-    def __init__(self, timeout: int = TIMEOUT, browser: str = "chrome", cookie_file: str = None):
-        self.timeout = timeout
-        self.browser = browser
-        self.session = requests.Session()
+    Args:
+        keyword: 搜索关键词
+        engine: 搜索引擎 ("all" | "bing_cn" | "bing_global" | "yandex" | "swisscows")
+    
+    Returns:
+        [{"title": "标题", "link": "链接", "engine": "引擎名"}, ...]
+    """
+    se = _SearchEngine()
+    
+    if engine == "all":
+        # 多引擎搜索
+        results = []
+        seen_links = set()
+        raw = se.search_all(keyword)
         
-        # 初始化浏览器指纹
-        self._init_fingerprint()
-        
-        # Cookie 持久化
-        self.cookie_file = cookie_file or "/tmp/hot_search_cookies.json"
-        self._load_cookies()
-        
-        # 模拟人工操作的延迟范围（秒）
-        self.delay_range = (0.5, 2.0)
-    
-    def _init_fingerprint(self):
-        """初始化浏览器指纹"""
-        ua = random.choice(USER_AGENTS.get(self.browser, USER_AGENTS["chrome"]))
-        fp = BROWSER_FINGERPRINTS.get(self.browser, {})
-        
-        self.session.headers.update({
-            "User-Agent": ua,
-            **fp
-        })
-    
-    def _load_cookies(self):
-        """加载保存的Cookie"""
-        try:
-            import json
-            with open(self.cookie_file, "r") as f:
-                cookies = json.load(f)
-                for name, value in cookies.items():
-                    self.session.cookies.set(name, value)
-        except:
-            pass
-    
-    def _save_cookies(self):
-        """保存Cookie到文件"""
-        try:
-            import json
-            cookies = {c.name: c.value for c in self.session.cookies}
-            with open(self.cookie_file, "w") as f:
-                json.dump(cookies, f)
-        except:
-            pass
-    
-    def _human_delay(self):
-        """模拟人工操作延迟"""
-        delay = random.uniform(*self.delay_range)
-        time.sleep(delay)
-    
-    def _random_referer(self, url: str):
-        """随机设置Referer"""
-        domain = urllib.parse.urlparse(url).netloc
-        referers = [
-            f"https://www.google.com/search?q={random.choice(['news', 'today', 'latest'])}",
-            f"https://www.baidu.com/s?wd={random.choice(['新闻', '今日', '最新'])}",
-            f"https://{domain}/",
+        for eng, items in raw.items():
+            for item in items:
+                link = item.get("link", "")
+                if link and link not in seen_links:
+                    seen_links.add(link)
+                    results.append({
+                        "title": item.get("title", ""),
+                        "link": link,
+                        "engine": eng,
+                    })
+        return results
+    else:
+        # 单引擎搜索
+        items = se.search(keyword, engine)
+        return [
+            {"title": item.get("title", ""), "link": item.get("link", ""), "engine": engine}
+            for item in items
         ]
-        self.session.headers["Referer"] = random.choice(referers)
+
+
+def get_hot(platform: str = "all") -> Dict[str, List[Dict]]:
+    """
+    获取热搜榜
     
-    # ----- 跳转访问 -----
-    def fetch(self, url: str, render_js: bool = False) -> Dict:
-        """
-        访问新页面，自动判断是否JS渲染
-        
-        Args:
-            url: 目标链接
-            render_js: 是否尝试执行JS（默认False，检测到JS时自动尝试）
-        
-        Returns:
-            {"html": 内容, "is_js": 是否JS渲染, "title": 标题, "text": 纯文本}
-        """
-        result = {"url": url, "html": None, "text": None, "title": None, "is_js": False}
-        
+    Args:
+        platform: 平台名称 ("all" | "baidu" | "weibo" | "zhihu")
+    
+    Returns:
+        {
+            "baidu": [{"rank": 1, "title": "标题", "url": "链接", "hot": "热度"}, ...],
+            "weibo": [...],
+            "zhihu": [...]
+        }
+    """
+    results = {}
+    
+    if platform in ("all", "baidu"):
         try:
-            # 模拟人工操作
-            self._human_delay()
-            self._random_referer(url)
-            
-            r = self.session.get(url, timeout=self.timeout)
-            html = r.text
-            
-            # 保存Cookie
-            self._save_cookies()
-            
-            # 判断是否JS渲染
-            is_js = self._is_js_rendered(html)
-            result["is_js"] = is_js
-            
-            if is_js and render_js:
-                html = self._exec_js(html) or html
-            
-            soup = BeautifulSoup(html, "html.parser")
-            result["html"] = html
-            result["text"] = soup.get_text(strip=True)[:5000]
-            result["title"] = soup.title.string if soup.title else None
-            
+            results["baidu"] = get_baidu_hot(20)
         except Exception as e:
-            result["error"] = str(e)[:50]
-        
-        return result
+            results["baidu"] = []
+            print(f"百度热搜获取失败: {e}")
     
-    def _is_js_rendered(self, html: str) -> bool:
-        """判断页面是否JS渲染"""
-        # 判断依据：body内容很少 + 有JS框架特征
-        soup = BeautifulSoup(html, "html.parser")
-        body = soup.find("body")
-        if not body:
-            return True
-        
-        text_len = len(body.get_text(strip=True))
-        has_js_framework = any(x in html for x in ["__NEXT_DATA__", "__INITIAL_STATE__", "react", "vue", "angular", "window.__"])
-        
-        # 内容很少 + 有JS框架 = JS渲染
-        return text_len < 500 and has_js_framework
-    
-    def _exec_js(self, html: str) -> str:
-        """执行页面JS获取内容（无浏览器）"""
+    if platform in ("all", "weibo"):
         try:
-            import execjs
-            soup = BeautifulSoup(html, "html.parser")
-            
-            # 提取并执行关键JS
-            for script in soup.find_all("script"):
-                code = script.string
-                if code and any(x in code for x in ["article", "content", "data"]):
-                    try:
-                        ctx = execjs.compile(code)
-                        return str(ctx.eval("this"))
-                    except:
-                        pass
-        except:
-            pass
-        return None
-    
-    # ----- 搜索 -----
-    def search(self, keyword: str, engine: str = "bing_global") -> List[Dict]:
-        """单引擎搜索"""
-        if engine not in ENGINES:
-            return []
-        
-        cfg = ENGINES[engine]
-        url = cfg["url"] + "?" + urllib.parse.urlencode({k: v.format(kw=keyword) for k, v in cfg["params"].items()})
-        
-        try:
-            r = self.session.get(url, timeout=self.timeout)
-            soup = BeautifulSoup(r.text, "html.parser")
-            results = []
-            for item in soup.select(".b_algo, .serp-item, .result")[:10]:
-                t = item.find(["h2", "h3"])
-                a = item.find("a")
-                if t and a:
-                    results.append({"title": t.get_text(strip=True), "link": a.get("href", "")})
-            return results
-        except:
-            return []
-    
-    def search_all(self, keyword: str) -> Dict[str, List]:
-        """多引擎搜索（阻塞控制：总超时10秒）"""
-        results = {}
-        start = time.time()
-        for engine in ENGINES:
-            if time.time() - start > 10:
-                break
-            results[engine] = self.search(keyword, engine)
-            time.sleep(0.5)
-        return results
-    
-    # ----- 金融数据 -----
-    def finance(self, keyword: str) -> Dict:
-        """金融数据查询（Trading Economics）"""
-        kw = keyword.lower()
-        path, name = FINANCE_MAP.get(kw, (None, keyword))
-        
-        if not path:
-            return {"error": "不支持的关键词"}
-        
-        url = f"https://tradingeconomics.com/{path}"
-        
-        try:
-            r = self.session.get(url, timeout=self.timeout)
-            text = r.text
-            
-            # 提取价格
-            price_match = re.search(r'(?:rose to|at)\s+([\d.]+)\s*(?:USD|USD/Bbl|\$)', text)
-            price = price_match.group(1) if price_match else None
-            
-            # 提取涨跌
-            change_match = re.search(r'(up|down)\s+([\d.]+)%', text)
-            change = f"{'+' if change_match and change_match.group(1)=='up' else '-'}{change_match.group(2) if change_match else '?'}%"
-            
-            return {"name": name, "price": f"{price} USD" if price else None, "change": change, "url": url}
+            results["weibo"] = get_weibo_hot(20)
         except Exception as e:
-            return {"error": str(e)[:50]}
+            results["weibo"] = []
+            print(f"微博热搜获取失败: {e}")
     
-    # ----- 新闻抓取 -----
-    def news(self, sources: List[str] = None, limit: int = 5) -> Dict[str, List]:
-        """新闻抓取（纯静态，不用浏览器）"""
-        if not sources:
-            sources = list(NEWS_SOURCES.keys())
-        
-        results = {}
-        for src in sources:
-            if src not in NEWS_SOURCES:
-                continue
-            
-            cfg = NEWS_SOURCES[src]
-            try:
-                r = self.session.get(cfg["url"], timeout=self.timeout)
-                soup = BeautifulSoup(r.text, "html.parser")
-                
-                articles = []
-                for link in soup.find_all("a", href=True):
-                    href, text = link.get("href", ""), link.get_text(strip=True)
-                    if cfg["pattern"] in href and 5 < len(text) < 100:
-                        if href.startswith("/"):
-                            href = cfg["url"].split("//")[0] + "//" + cfg["url"].split("//")[1].split("/")[0] + href
-                        articles.append({"title": text, "url": href})
-                
-                # 去重
-                seen = set()
-                results[src] = [a for a in articles if a["url"] not in seen and not seen.add(a["url"])][:limit]
-            except:
-                results[src] = []
-        
-        return results
-    
-    # ----- 图片搜索 -----
-    def images(self, keyword: str, limit: int = 5, save_dir: str = "/tmp") -> List[str]:
-        """图片搜索并下载"""
-        url = f"https://global.bing.com/images/search?q={urllib.parse.quote(keyword)}"
+    if platform in ("all", "zhihu"):
         try:
-            r = self.session.get(url, timeout=self.timeout)
-            imgs = re.findall(r'm="(https?://[^"]+\.(jpg|png))', r.text)[:limit]
-            saved = []
-            for i, (img_url, _) in enumerate(imgs):
-                path = f"{save_dir}/{keyword}_{i}.jpg"
-                if self._download(img_url, path):
-                    saved.append(path)
-            return saved
-        except:
-            return []
+            results["zhihu"] = get_zhihu_hot(20)
+        except Exception as e:
+            results["zhihu"] = []
+            print(f"知乎热搜获取失败: {e}")
     
-    def _download(self, url: str, path: str) -> bool:
-        """下载文件"""
-        try:
-            r = self.session.get(url, timeout=self.timeout)
-            if r.status_code == 200:
-                with open(path, "wb") as f:
-                    f.write(r.content)
-                return True
-        except:
-            pass
-        return False
+    return results
+
+
+def scrape_url(url: str) -> Dict:
+    """
+    URL 深度抓取，返回 Markdown + JSON
+    
+    Args:
+        url: 目标 URL
+    
+    Returns:
+        {
+            "title": "标题",
+            "content": "正文（Markdown）",
+            "content_html": "正文（HTML）",
+            "summary": "摘要",
+            "keywords": ["关键词"],
+            "metadata": {...},
+            "error": None 或 "错误信息"
+        }
+    """
+    return _scrape_url(url)
+
 
 # ==================== 命令行入口 ====================
 
-if __name__ == "__main__":
-    import sys
-    
-    hs = HotSearch()
-    
+def main():
+    """命令行入口"""
     if len(sys.argv) < 2:
-        print("用法: python search_skill.py <命令> [参数]")
-        print("命令: search <关键词> | finance <关键词> | news | images <关键词>")
+        print("Hot Search v2.0.0 - 全网热搜神器")
+        print()
+        print("用法:")
+        print("  python hot_search.py search <关键词> [引擎]")
+        print("  python hot_search.py hot [平台]")
+        print("  python hot_search.py scrape <URL>")
+        print()
+        print("命令:")
+        print("  search  全网搜索（引擎: all/bing_cn/bing_global/yandex/swisscows）")
+        print("  hot     获取热搜榜（平台: all/baidu/weibo/zhihu）")
+        print("  scrape  URL 深度抓取，输出 Markdown")
+        print()
+        print("示例:")
+        print("  python hot_search.py search 张雪机车夺冠")
+        print("  python hot_search.py search 原油价格 bing_global")
+        print("  python hot_search.py hot baidu")
+        print("  python hot_search.py scrape https://news.sina.com.cn/xxx")
         sys.exit(1)
     
-    cmd, arg = sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else ""
+    cmd = sys.argv[1]
     
     if cmd == "search":
-        for eng, res in hs.search_all(arg).items():
-            if res:
-                print(f"\n【{eng}】{len(res)}条")
-                for r in res[:3]:
-                    print(f"  - {r['title'][:50]}")
+        keyword = sys.argv[2] if len(sys.argv) > 2 else ""
+        engine = sys.argv[3] if len(sys.argv) > 3 else "all"
+        
+        if not keyword:
+            print("错误: 请提供搜索关键词")
+            sys.exit(1)
+        
+        print(f"\n【搜索】{keyword}（引擎: {engine}）\n")
+        results = search(keyword, engine)
+        
+        if not results:
+            print("未找到结果")
+        else:
+            for i, r in enumerate(results[:20], 1):
+                print(f"{i:2}. [{r['engine']}] {r['title'][:50]}")
+                print(f"    {r['link']}")
+        
+        print(f"\n共 {len(results)} 条结果")
     
-    elif cmd == "finance":
-        data = hs.finance(arg)
-        print(f"\n【{data.get('name', arg)}】")
-        print(f"  价格: {data.get('price', '-')}")
-        print(f"  涨跌: {data.get('change', '-')}")
-        print(f"  链接: {data.get('url', '-')}")
+    elif cmd == "hot":
+        platform = sys.argv[2] if len(sys.argv) > 2 else "all"
+        
+        print(f"\n【热搜榜】{platform}\n")
+        results = get_hot(platform)
+        
+        for plat, items in results.items():
+            if items:
+                print(f"\n{'='*50}")
+                print(f"📱 {plat.upper()} 热搜榜")
+                print('='*50)
+                for item in items[:10]:
+                    title = item.get("title", "")[:35]
+                    hot = item.get("hot", "")
+                    hot_str = f" 🔥{hot}" if hot else ""
+                    print(f"{item.get('rank', '?'):2}. {title}{hot_str}")
+            else:
+                print(f"\n{plat}: 暂无数据")
     
-    elif cmd == "news":
-        for src, articles in hs.news().items():
-            if articles:
-                print(f"\n【{NEWS_SOURCES[src]['name']}】{len(articles)}条")
-                for a in articles[:3]:
-                    print(f"  - {a['title'][:50]}")
+    elif cmd == "scrape":
+        url = sys.argv[2] if len(sys.argv) > 2 else ""
+        
+        if not url:
+            print("错误: 请提供 URL")
+            sys.exit(1)
+        
+        print(f"\n【抓取】{url}\n")
+        result = scrape_url(url)
+        
+        if result.get("error"):
+            print(f"错误: {result['error']}")
+        else:
+            print(f"标题: {result.get('title', '无标题')}")
+            print(f"关键词: {', '.join(result.get('keywords', [])) or '无'}")
+            print()
+            print("-" * 50)
+            print("正文:")
+            print("-" * 50)
+            content = result.get("content", "")
+            if content:
+                # 限制输出长度
+                if len(content) > 3000:
+                    print(content[:3000])
+                    print("\n... (内容过长，已截断)")
+                else:
+                    print(content)
+            else:
+                print("未能提取正文")
     
-    elif cmd == "images":
-        saved = hs.images(arg)
-        print(f"\n下载 {len(saved)} 张图片:")
-        for p in saved:
-            print(f"  - {p}")
+    else:
+        print(f"未知命令: {cmd}")
+        print("可用命令: search, hot, scrape")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

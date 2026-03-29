@@ -1,0 +1,182 @@
+{
+  "version": "2.0.0",
+  "global_timeout": 30,
+  "max_retries": 3,
+  "user_agent": "auto",
+  "platforms": {
+    "bing_global": {
+      "enabled": true,
+      "timeout": 10,
+      "retry": 2,
+      "delay_range": [0.5, 1.5],
+      "max_results": 10
+    },
+    "bing_cn": {
+      "enabled": true,
+      "timeout": 10,
+      "retry": 2,
+      "delay_range": [0.5, 1.5],
+      "max_results": 10
+    },
+    "yandex": {
+      "enabled": true,
+      "timeout": 10,
+      "retry": 2,
+      "delay_range": [0.5, 1.5],
+      "max_results": 10
+    },
+    "swisscows": {
+      "enabled": true,
+      "timeout": 10,
+      "retry": 2,
+      "delay_range": [0.5, 1.5],
+      "max_results": 10
+    },
+    "trading_economics": {
+      "enabled": true,
+      "timeout": 15,
+      "retry": 1,
+      "delay_range": [1.0, 2.0],
+      "max_results": 5
+    }
+  },
+  "anti_crawl": {
+    "user_agent_rotation": true,
+    "referer_rotation": true,
+    "cookie_persistence": true,
+    "request_delay": true,
+    "max_requests_per_minute": 30
+  },
+  "article_fetcher": {
+    "supported_domains": {
+      "mp.weixin.qq.com": {
+        "name": "微信公众号",
+        "content_selector": "#js_content",
+        "title_selector": "#activity-name",
+        "author_selector": "#js_name",
+        "date_selector": "#publish_time"
+      },
+      "zhuanlan.zhihu.com": {
+        "name": "知乎专栏",
+        "content_selector": ".Post-RichText, .RichText",
+        "title_selector": ".Post-Title, h1"
+      },
+      "www.zhihu.com": {
+        "name": "知乎问答",
+        "content_selector": ".RichContent-inner",
+        "title_selector": ".QuestionHeader-title"
+      },
+      "weibo.com": {
+        "name": "微博",
+        "content_selector": ".WB_text, .detail_text",
+        "title_selector": ".WB_text"
+      },
+      "m.weibo.cn": {
+        "name": "微博移动版",
+        "content_selector": ".weibo-text",
+        "title_selector": ".weibo-text"
+      },
+      "www.toutiao.com": {
+        "name": "今日头条",
+        "content_selector": ".article-content",
+        "title_selector": ".article-title"
+      },
+      "36kr.com": {
+        "name": "36氪",
+        "content_selector": ".article-content, .detail-content",
+        "title_selector": ".article-title, h1"
+      },
+      "sspai.com": {
+        "name": "少数派",
+        "content_selector": ".article-content",
+        "title_selector": ".article-title"
+      },
+      "juejin.cn": {
+        "name": "掘金",
+        "content_selector": ".article-content",
+        "title_selector": ".article-title"
+      },
+      "www.cnblogs.com": {
+        "name": "博客园",
+        "content_selector": "#cnblogs_post_body",
+        "title_selector": "#cb_post_title_url"
+      },
+      "blog.csdn.net": {
+        "name": "CSDN",
+        "content_selector": "#article_content",
+        "title_selector": ".title-article"
+      },
+      "www.jianshu.com": {
+        "name": "简书",
+        "content_selector": ".article",
+        "title_selector": ".title"
+      },
+      "new.qq.com": {
+        "name": "腾讯新闻",
+        "content_selector": ".content-article, #article-content",
+        "title_selector": ".title, h1"
+      },
+      "news.163.com": {
+        "name": "网易新闻",
+        "content_selector": ".post_body, #content",
+        "title_selector": ".title, h1"
+      },
+      "news.sina.com.cn": {
+        "name": "新浪新闻",
+        "content_selector": "#article, .article-content",
+        "title_selector": ".main-title, h1"
+      },
+      "www.thepaper.cn": {
+        "name": "澎湃新闻",
+        "content_selector": ".news_content, .article-content",
+        "title_selector": ".news_title, h1"
+      },
+      "www.guancha.cn": {
+        "name": "观察者网",
+        "content_selector": ".content, .article-content",
+        "title_selector": ".title, h1"
+      },
+      "world.huanqiu.com": {
+        "name": "环球网",
+        "content_selector": ".article-content",
+        "title_selector": ".title, h1"
+      }
+    },
+    "generic_selectors": [
+      "article",
+      ".article-content",
+      ".post-content",
+      ".entry-content",
+      ".content",
+      "#content",
+      ".main-content",
+      "main"
+    ],
+    "noise_selectors": [
+      "script",
+      "style",
+      "nav",
+      "header",
+      "footer",
+      ".ad",
+      ".ads",
+      ".advertisement",
+      ".sidebar",
+      ".related-posts",
+      ".recommend",
+      ".comments",
+      ".social-share",
+      ".share-btn",
+      ".author-info",
+      "#comments",
+      "#sidebar",
+      "#footer",
+      "[class*='ad-']",
+      "[class*='ads-']",
+      "[id*='ad-']",
+      "[id*='ads-']"
+    ],
+    "max_content_length": 50000,
+    "timeout": 15
+  }
+}

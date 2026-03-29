@@ -498,18 +498,19 @@ if __name__ == "__main__":
 NEWS_SOURCES = {
     "zaobao": {
         "name": "联合早报（新加坡）",
-        "url": "https://www.zaobao.com",  # 首页，自动跳转
+        "url": "https://www.zaobao.com",
         "lang": "zh",
         "need_translate": False,
         "link_pattern": "/story",
-        "note": "国内访问自动跳转中国版，权重降低",
+        "note": "国内访问自动跳转中国版",
     },
     "rt": {
         "name": "RT（俄罗斯）",
-        "url": "https://www.rt.com/",
+        "url": "https://www.rt.com/news/",
         "lang": "en",
         "need_translate": True,
         "link_pattern": "/news/",
+        "note": "⚠️ 国内需代理",
     },
     "un_news": {
         "name": "联合国新闻（官方）",
@@ -647,21 +648,32 @@ def search_news(keyword: str = "", sources: Optional[List[str]] = None, limit: i
                 
                 # 提取新闻链接
                 articles = []
+                base_url = "/".join(url.split("/")[:3])
+                
                 for link in soup.find_all("a", href=True):
                     href = link.get("href", "")
                     text = link.get_text(strip=True)
                     
-                    # 过滤新闻链接
-                    if link_pattern in href and text and len(text) > 5 and len(text) < 100:
-                        if href.startswith("/"):
-                            href = "/".join(url.split("/")[:3]) + href
-                        
-                        # 关键词过滤（如果有）
-                        if keyword:
-                            if keyword.lower() in text.lower() or search_keyword.lower() in text.lower():
-                                articles.append({"title": text, "url": href, "source": config["name"]})
-                        else:
-                            articles.append({"title": text, "url": href, "source": config["name"]})
+                    # 跳过空链接或导航链接
+                    if not text or len(text) < 10 or len(text) > 150:
+                        continue
+                    
+                    # RT 特殊处理：/news/xxx 格式的文章链接
+                    if source == "rt":
+                        if href.startswith("/news/") and len(href) > 6:
+                            full_url = base_url + href
+                            articles.append({"title": text, "url": full_url, "source": config["name"]})
+                    
+                    # AP News 特殊处理：/article/xxx 格式
+                    elif source == "apnews":
+                        if "/article/" in href:
+                            full_url = href if href.startswith("http") else base_url + href
+                            articles.append({"title": text, "url": full_url, "source": config["name"]})
+                    
+                    # 其他源：使用 link_pattern 过滤
+                    elif link_pattern and link_pattern in href:
+                        full_url = href if href.startswith("http") else base_url + href
+                        articles.append({"title": text, "url": full_url, "source": config["name"]})
                 
                 # 去重
                 seen = set()
