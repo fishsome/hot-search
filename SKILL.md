@@ -1,15 +1,26 @@
 ---
 name: hot-search
-description: Hot Search 🔥 全网热搜神器 - 多引擎聚合搜索 + AkShare 金融数据。支持股票行情、期货期权、基金 ETF、宏观经济、资金流等全品类金融数据。免费无限，稳定可靠。
+version: "2.2.0"
+description: Hot Search 🔥 V2.2 + 金融专属Pro版 - 轻量级中文热点聚合 + 联网搜索插件。支持 OpenClaw Skill 规范、自然语言指令解析、热点监控与历史查询。
 ---
 
-# Hot Search 🔥 全网热搜神器
+# Hot Search 🔥 V2.2 - OpenClaw 适配版
 
-_版本：1.0.2 | 作者：FishSome | 邮箱：fishsomes@gmail.com_
+_版本：2.2.0 | 作者：FishSome | 邮箱：fishsomes@gmail.com_
 
 ---
 
 ## 🔥 版本日志
+
+### v2.2.0 (2026-03-30) - OpenClaw 适配版
+
+- ✅ **统一调用入口** - `hot-search.py` 统一 CLI 入口
+- ✅ **新增命令** - monitor（热点监控）、history（历史查询）、parse（自然语言解析）
+- ✅ **JSON 格式输出** - 所有命令返回标准 JSON 格式
+- ✅ **自然语言指令** - 支持中文自然语言指令解析
+- ✅ **OpenClaw Skill 标准化** - skill.json V2.2.0 格式
+- ✅ **AI Agent 异步适配** - yieldMs/background 支持
+- ✅ **测试报告** - OpenClaw 兼容性测试全部通过
 
 ### v1.0.2 (2026-03-29)
 - ✅ 新增 **AkShare** 金融数据接口（90%+ 金融数据覆盖）
@@ -26,6 +37,74 @@ _版本：1.0.2 | 作者：FishSome | 邮箱：fishsomes@gmail.com_
 - ✅ 初始版本发布
 - ✅ 支持 Bing 国内/国际、Yandex、Swisscows
 - ✅ 支持图片搜索和下载
+
+---
+
+## 🚀 OpenClaw 命令规范 V2.2
+
+### 统一 CLI 入口
+
+```bash
+# 热点聚合
+hot-search hot [platform]        # platform: all/baidu/weibo/zhihu
+
+# 关键词搜索
+hot-search search [keyword] [engine]  # engine: all/bing_cn/bing_global/yandex/swisscows
+
+# 热点监控
+hot-search monitor [keyword] [threshold]  # threshold: 热度阈值（默认 10000）
+
+# 历史查询
+hot-search history [platform] [date]  # date: today/yesterday/YYYY-MM-DD
+
+# URL 抓取
+hot-search scrape [url]
+
+# 自然语言解析
+hot-search parse [自然语言指令]
+
+# 版本信息
+hot-search version
+```
+
+### JSON 输出格式（标准化）
+
+所有命令返回统一 JSON 格式：
+
+```json
+{
+  "success": true,           // 成功状态
+  "error": null,             // 错误信息（失败时）
+  "timestamp": "2026-03-30 01:38:00",
+  "data": [...],             // 结果数据
+  "count": 20,               // 结果数量
+  // 其他字段根据命令类型
+}
+```
+
+### 自然语言指令支持
+
+```python
+# 自动解析自然语言指令
+"今日全网热点" → "hot all"
+"微博热搜" → "hot weibo"
+"搜索张雪机车夺冠新闻" → "search 张雪机车夺冠"
+"监控科技类热点" → "monitor 科技 5000"
+"查看昨天百度热搜" → "history baidu yesterday"
+```
+
+### AI Agent 异步调用规范
+
+```bash
+# ✅ 正确：异步阻塞执行（推荐）
+exec command="python3 hot-search.py hot weibo" yieldMs=5000
+
+# ✅ 正确：长时间任务用 background
+exec command="python3 hot-search.py monitor 股票 10000" background=true
+
+# ❌ 错误：同步阻塞执行（会卡死！）
+exec command="python3 hot-search.py hot all"
+```
 
 ---
 

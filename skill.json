@@ -1,32 +1,32 @@
 {
   "name": "hot-search",
-  "version": "2.0.0",
-  "description": "全网热搜神器 - 热搜聚合 + URL 深度抓取",
-  "entry": "hot_search.py",
-  "commands": {
-    "search": "全网搜索",
-    "hot": "获取热搜榜",
-    "scrape": "URL 深度抓取"
-  },
+  "version": "2.2.0",
+  "description": "Hot Search V2.2 + 金融专属Pro版 - 轻量级中文热点聚合 + 联网搜索插件",
   "author": "FishSome",
-  "author_email": "fishsomes@gmail.com",
   "license": "MIT",
-  "keywords": ["search", "hot-search", "web-scraper", "multi-engine", "openclaw", "热搜", "抓取"],
-  "main": "hot_search.py",
+  "entry": "hot-search.py",
+  "commands": {
+    "hot": "热点聚合（支持平台参数）",
+    "search": "关键词搜索",
+    "monitor": "热点监控",
+    "history": "历史查询"
+  },
+  "keywords": ["search", "hot-search", "web-scraper", "multi-engine", "openclaw"],
   "repository": "https://github.com/fishsomes/hot-search",
-  "homepage": "https://clawhub.ai/skills/hot-search",
   "requirements": "requirements.txt",
-  "usage": "python3 hot_search.py <command> [args]",
+  "usage": "hot-search [command] [args]",
   "examples": [
-    "python3 hot_search.py search 张雪机车夺冠",
-    "python3 hot_search.py hot baidu",
-    "python3 hot_search.py scrape https://example.com/article"
+    "hot-search weibo",
+    "hot-search search 张雪机车夺冠",
+    "hot-search monitor 股票 10000",
+    "hot-search history baidu 2026-03-30"
   ],
   "engines": {
     "bing_cn": "必应国内搜索",
     "bing_global": "必应国际搜索",
     "yandex": "俄罗斯 Yandex 搜索",
-    "swisscows": "瑞士 Swisscows 隐私搜索"
+    "swisscows": "瑞士 Swisscows 隐私搜索",
+    "trading_economics": "Trading Economics 金融数据"
   },
   "hot_platforms": {
     "baidu": "百度热搜榜",
@@ -37,6 +37,10 @@
     "多引擎聚合搜索",
     "热搜榜聚合（百度/微博/知乎）",
     "URL 深度抓取转 Markdown",
+    "热点监控与告警",
+    "历史热搜查询",
+    "自然语言指令解析",
+    "AI Agent 异步适配",
     "自动重试机制",
     "超时控制",
     "失败自动跳过",
@@ -45,7 +49,7 @@
   "tested": {
     "date": "2026-03-30",
     "success_rate": "95%+",
-    "available_engines": ["bing_cn", "bing_global", "yandex", "swisscows"],
+    "available_engines": ["bing_cn", "bing_global", "yandex", "swisscows", "trading_economics"],
     "available_platforms": ["baidu", "weibo", "zhihu"]
   }
 }

@@ -17,6 +17,12 @@ from .anti_crawl import (
 )
 from .dedup import deduplicate_by_title, cluster_by_topic, similarity, normalize_title
 from .output import to_markdown, to_json, to_table, to_simple_list
+from .cache import (
+    FileCache,
+    CacheManager,
+    get_cache_manager,
+    cached,
+)
 
 __all__ = [
     # config
@@ -43,4 +49,9 @@ __all__ = [
     "to_json",
     "to_table",
     "to_simple_list",
+    # cache
+    "FileCache",
+    "CacheManager",
+    "get_cache_manager",
+    "cached",
 ]

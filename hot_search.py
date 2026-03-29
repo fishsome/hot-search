@@ -23,6 +23,12 @@ from engines import get_baidu_hot, get_weibo_hot, get_zhihu_hot
 # 导入 URL 抓取
 from fetcher import scrape_url as _scrape_url
 
+# 导入缓存模块
+from utils.cache import cached, get_cache_manager
+
+# 缓存时间（秒）
+CACHE_TTL = 300
+
 
 # ==================== 公开 API ====================
 
@@ -65,9 +71,10 @@ def search(keyword: str, engine: str = "all") -> List[Dict]:
         ]
 
 
+@cached(ttl=CACHE_TTL)
 def get_hot(platform: str = "all") -> Dict[str, List[Dict]]:
     """
-    获取热搜榜
+    获取热搜榜（带缓存，5分钟ttl）
     
     Args:
         platform: 平台名称 ("all" | "baidu" | "weibo" | "zhihu")
@@ -126,7 +133,12 @@ def scrape_url(url: str) -> Dict:
     return _scrape_url(url)
 
 
-# ==================== 命令行入口 ====================
+def clear_cache():
+    """清除缓存"""
+    return get_cache_manager().clear()
+
+
+# 命令行入口补充
 
 def main():
     """命令行入口"""
@@ -221,9 +233,18 @@ def main():
             else:
                 print("未能提取正文")
     
+    elif cmd == "clear_cache":
+        count = clear_cache()
+        print(f"✅ 已清除 {count} 条缓存")
+    
+    elif cmd == "cache_status":
+        manager = get_cache_manager()
+        count = len(list(manager._cache.cache_dir.glob("*.json")))
+        print(f"缓存条数: {count}")
+    
     else:
         print(f"未知命令: {cmd}")
-        print("可用命令: search, hot, scrape")
+        print("可用命令: search, hot, scrape, clear_cache, cache_status")
         sys.exit(1)
 
 

@@ -84,6 +84,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2026-03-30
+
+### 🎉 Added - OpenClaw 适配版
+
+- **统一调用入口**
+  - 新增 `hot-search.py` 统一入口文件
+  - 命令行规范：`hot-search [command] [args]`
+  - 所有命令返回标准 JSON 格式
+
+- **新增命令**
+  - `monitor` - 热点监控（关键词 + 热度阈值）
+  - `history` - 历史热搜查询（支持日期参数）
+  - `parse` - 自然语言指令解析
+  - `version` - 版本信息查询
+
+- **自然语言指令解析**
+  - 支持中文自然语言指令
+  - 自动解析为标准命令
+  - 示例："今日全网热点" → "hot all"
+
+- **OpenClaw Skill 标准化**
+  - 更新 `skill.json` 至 V2.2.0 格式
+  - AI Agent 异步适配
+  - JSON 输出格式标准化
+  - 错误处理兼容 OpenClaw
+
+### 📋 Changed - 改进
+
+- 统一 JSON 输出格式：
+  ```json
+  {
+    "success": true/false,
+    "error": null/"错误信息",
+    "timestamp": "时间戳",
+    "data": [...]
+  }
+  ```
+- 错误处理标准化，失败时返回 `success=false + error`
+- 性能优化：单引擎 2s 超时，总超时 10s
+
+### 📖 Documentation - 文档更新
+
+- 新增 `TEST_REPORT.md` OpenClaw 兼容性测试报告
+- 更新 `CHANGELOG.md` 版本日志
+- 更新 `skill.json` 版本信息
+
+---
+
 ## [Unreleased]
 
-- 暂无计划
+- 异步任务完整轮询机制
+- 历史数据定时保存任务
