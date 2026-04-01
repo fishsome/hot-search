@@ -1,0 +1,64 @@
+# hot-search v4.0 配置文件
+
+# 搜索引擎配置
+search:
+  primary: bing          # 主搜索引擎
+  fallback:              # 备用搜索引擎（按优先级）
+    - sougou
+    - baidu
+  timeout: 3             # 单次请求超时（秒）
+  max_retries: 2         # 最大重试次数
+
+# 新闻源配置
+news:
+  sources:               # 新闻源列表
+    - zaobao             # 联合早报
+    - rt                 # RT News
+    - un_news            # 联合国新闻
+    - apnews             # 美联社
+  timeout: 3             # 单次请求超时（秒）
+  max_retries: 2         # 最大重试次数
+
+# 定时抓取配置
+scheduler:
+  enabled: true          # 是否启用定时抓取
+  schedule:              # 抓取时间（早中晚）
+    morning: "07:00"     # 早安
+    noon: "12:00"        # 午安
+    evening: "21:00"     # 晚安
+  batch_size: 50         # 每次抓取条数（50-100）
+  max_batch_size: 100    # 最大抓取条数
+
+# 缓存配置
+cache:
+  enabled: true          # 是否启用缓存
+  path: "./cache/news_cache.log"  # 缓存文件路径
+  format: "jsonl"        # 缓存格式（JSON Lines）
+  max_age: 24            # 缓存最大保留时间（小时）
+  max_size: 1000         # 缓存最大条数
+
+# 推荐系统配置
+recommend:
+  enabled: true          # 是否启用推荐
+  user_focus:            # 用户关注点（权重）
+    finance: 3           # 金融
+    war: 2               # 战争
+    tech: 2              # 科技
+    entertainment: 1     # 娱乐
+    sports: 1            # 体育
+  recommend_count: 5     # 推荐条数（5-10）
+  max_recommend: 10      # 最大推荐条数
+
+# 反爬配置
+anti_crawler:
+  headers_pool: true     # 启用headers池轮换
+  proxy_enabled: false   # 启用代理（可选）
+  js_executor: true      # 启用PyExecJS
+  delay_range:           # 请求延迟范围（秒）
+    min: 0.5
+    max: 2.0
+
+# 日志配置
+logging:
+  level: INFO            # 日志级别
+  path: "./cache/hot-search.log"  # 日志文件路径

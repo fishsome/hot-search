@@ -1,0 +1,91 @@
+{
+  "name": "hot-search",
+  "version": "4.0.0",
+  "description": "Hot Search 🔥 V4.0 - 聚焦主线，简化功能。搜索聚合（Bing主+Sougou/百度备）+ 国际新闻（联合早报/RT/UN/AP）+ 定时抓取 + 权重推荐。",
+  "author": "FishSome",
+  "email": "fishsomes@gmail.com",
+  "repository": "https://github.com/fishsomes/hot-search-v4",
+  "license": "MIT",
+  "keywords": [
+    "search",
+    "news",
+    "bing",
+    "sougou",
+    "baidu",
+    "zaobao",
+    "rt",
+    "un",
+    "apnews",
+    "aggregator",
+    "scheduler",
+    "recommend"
+  ],
+  "engines": {
+    "search": [
+      "bing",
+      "sougou",
+      "baidu"
+    ],
+    "news": [
+      "zaobao",
+      "rt",
+      "un_news",
+      "apnews"
+    ]
+  },
+  "commands": {
+    "search": "搜索聚合（Bing主+Sougou/百度备）",
+    "news": "新闻抓取（联合早报/RT/UN/AP）",
+    "fetch": "立即抓取新闻（手动触发）",
+    "recommend": "推荐新闻（权重排序）",
+    "cache": "获取缓存新闻",
+    "scheduler": "定时调度（早中晚自动抓取）",
+    "config": "配置管理（显示/更新权重）"
+  },
+  "requirements": [
+    "requests",
+    "beautifulsoup4",
+    "pyyaml",
+    "schedule",
+    "pyexecjs"
+  ],
+  "config": {
+    "search": {
+      "primary": "bing",
+      "fallback": [
+        "sougou",
+        "baidu"
+      ],
+      "timeout": 3,
+      "max_retries": 2
+    },
+    "news": {
+      "sources": [
+        "zaobao",
+        "rt",
+        "un_news",
+        "apnews"
+      ],
+      "timeout": 3
+    },
+    "scheduler": {
+      "schedule": {
+        "morning": "07:00",
+        "noon": "12:00",
+        "evening": "21:00"
+      },
+      "batch_size": 50,
+      "max_batch_size": 100
+    },
+    "recommend": {
+      "user_focus": {
+        "finance": 3,
+        "war": 2,
+        "tech": 2,
+        "entertainment": 1,
+        "sports": 1
+      },
+      "recommend_count": 5
+    }
+  }
+}
